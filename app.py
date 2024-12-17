@@ -8,6 +8,7 @@ from src.functions import (
     radiative_heat_gain,
     convective_heat_loss,
     calculate_view_factor,
+    plot_geometry_plotly,
 )
 
 
@@ -37,10 +38,10 @@ app.layout = html.Div(
                 dcc.Input(id="d_x", type="number", value=0.0, step=0.01),
                 html.Br(),
                 html.Label("Y Distance (m)"),
-                dcc.Input(id="d_y", type="number", value=0.05, step=0.01),
+                dcc.Input(id="d_y", type="number", value=0.0, step=0.01),
                 html.Br(),
                 html.Label("Z Distance (m)"),
-                dcc.Input(id="d_z", type="number", value=0.05, step=0.01),
+                dcc.Input(id="d_z", type="number", value=0.1, step=0.01),
                 html.Br(),
                 html.Label("Angle Handwarmer (degrees)"),
                 dcc.Input(id="theta", type="number", value=0, step=5),
@@ -56,11 +57,21 @@ app.layout = html.Div(
                 html.H3("Results"),
                 html.P(id="q_rad_output"),
                 html.P(id="q_conv_output"),
-                html.P(id="view_factor"),
+                # html.P(id="view_factor"),
             ]
         ),
-        html.Hr(),
-        dcc.Graph(id="heat_gain_rate_chart"),
+        dbc.Row(
+            [
+                dbc.Col(
+                    dcc.Graph(id="heat_gain_rate_chart"),
+                    width={"size": 4},
+                ),
+                dbc.Col(
+                    dcc.Graph(id="geometry_chart"),
+                    width={"size": 8},
+                ),
+            ],
+        ),
     ]
 )
 
@@ -69,8 +80,9 @@ app.layout = html.Div(
     [
         Output("q_rad_output", "children"),
         Output("q_conv_output", "children"),
-        Output("view_factor", "children"),
+        # Output("view_factor", "children"),
         Output("heat_gain_rate_chart", "figure"),
+        Output("geometry_chart", "figure"),
     ],
     [
         Input("T_device", "value"),
@@ -131,11 +143,16 @@ def update_output(
         barmode="group",
     )
 
+    geometry_chart = plot_geometry_plotly(
+        d_x, d_y, d_z, theta, A_hand, A_device, view_factor
+    )
+
     return (
         f"Radiative Heat Gain (Q_rad): {Q_rad:.2f} W",
         f"Convective Heat Loss (Q_conv): {Q_conv:.2f} W",
-        f"View Factor (F12): {view_factor:.2f}",
+        # f"View Factor (F12): {view_factor:.2f}",
         bar_chart,
+        geometry_chart,
     )
 
 

@@ -1,5 +1,10 @@
 import numpy as np
 
+import matplotlib.pyplot as plt
+import numpy as np
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+import plotly.graph_objects as go
+
 
 # ---  Radiative Heat Gain ---
 
@@ -89,3 +94,123 @@ def convective_heat_loss(T_hand, T_air, A_hand, h=10):
     # Convective heat loss rate (W)
     Q_conv = h * A_hand * (T_hand_k - T_air_k)
     return -Q_conv  # to plot in negative y-direction
+
+
+# ---  Plot geometry configuration ---
+
+
+def plot_geometry_plotly(Dx, Dy, Dz, angle_deg, A1, A2, view_factor):
+    """
+    Visualize the geometry of two surfaces: a horizontal surface (hand) and a tilted surface (handwarmer) using Plotly.
+
+    Parameters:
+    - Dx: Horizontal distance between the centers of the surfaces in the x-direction (m)
+    - Dy: Horizontal distance between the centers of the surfaces in the y-direction (m)
+    - Dz: Vertical distance between the surfaces (m)
+    - angle_deg: Tilt angle of the second surface (degrees)
+    - A1: Area of the first surface (m²)
+    - A2: Area of the second surface (m²)
+    """
+    # Convert angle to radians
+    angle_rad = np.radians(angle_deg)
+
+    # Compute the dimensions of the rectangles assuming they are squares
+    L1 = np.sqrt(A1)
+    L2 = np.sqrt(A2)
+
+    # Define the center of the hand rectangle (at the origin)
+    hand_center = np.array([0, 0, 0])
+    hand_corners = np.array(
+        [
+            [-L1 / 2, -L1 / 2, 0],
+            [L1 / 2, -L1 / 2, 0],
+            [L1 / 2, L1 / 2, 0],
+            [-L1 / 2, L1 / 2, 0],
+        ]
+    )
+
+    # Define the center of the handwarmer rectangle
+    handwarmer_center = np.array([Dx, Dy, Dz])
+    handwarmer_corners = (
+        np.array(
+            [
+                [L2 / 2, L2 / 2 * np.cos(angle_rad), L2 / 2 * np.sin(angle_rad)],
+                [-L2 / 2, L2 / 2 * np.cos(angle_rad), L2 / 2 * np.sin(angle_rad)],
+                [-L2 / 2, -L2 / 2 * np.cos(angle_rad), -L2 / 2 * np.sin(angle_rad)],
+                [L2 / 2, -L2 / 2 * np.cos(angle_rad), -L2 / 2 * np.sin(angle_rad)],
+            ]
+        )
+        + handwarmer_center
+    )
+
+    # Create 3D plot using Plotly
+    fig = go.Figure()
+
+    # Add hand rectangle
+    fig.add_trace(
+        go.Mesh3d(
+            x=hand_corners[:, 0],
+            y=hand_corners[:, 1],
+            z=hand_corners[:, 2],
+            color="blue",
+            opacity=0.5,
+            name="Hand Surface",
+            flatshading=True,
+            showlegend=True,
+        )
+    )
+
+    # Add handwarmer rectangle
+    fig.add_trace(
+        go.Mesh3d(
+            x=handwarmer_corners[:, 0],
+            y=handwarmer_corners[:, 1],
+            z=handwarmer_corners[:, 2],
+            color="red",
+            opacity=0.5,
+            name="Handwarmer Surface",
+            flatshading=True,
+            showlegend=True,
+        )
+    )
+
+    # Add line connecting centers
+    fig.add_trace(
+        go.Scatter3d(
+            x=[hand_center[0], handwarmer_center[0]],
+            y=[hand_center[1], handwarmer_center[1]],
+            z=[hand_center[2], handwarmer_center[2]],
+            mode="lines",
+            line=dict(color="black", dash="dash"),
+            name="Center Distance",
+        )
+    )
+
+    # Add axis labels
+    fig.update_layout(
+        scene=dict(
+            xaxis_title="X (m)",
+            yaxis_title="Y (m)",
+            zaxis_title="Z (m)",
+            aspectmode="cube",
+        ),
+        title=f"Resulting View Factor (F12): {view_factor:.2f}",
+        showlegend=True,
+        width=800,
+        height=800,
+    )
+
+    fig.update_legends(
+        dict(
+            x=0,
+            y=1,
+            traceorder="normal",
+            orientation="h",
+            font=dict(
+                size=12,
+            ),
+            bgcolor="rgba(0,0,0,0)",
+        )
+    )
+
+    return fig
