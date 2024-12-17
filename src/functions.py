@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 
 # ---  Radiative Heat Gain ---
 
-# Constants
+# radiation constants
 sigma = 5.67e-8  # Stefan-Boltzmann constant (W/m²K⁴)
 epsilon = 0.95  # Emissivity of hand warmer surface
 
@@ -28,12 +28,8 @@ def calculate_view_factor(A1, A2, Dx, Dy, Dz, angle):
     Returns:
     - F12: View factor from surface 1 to surface 2
     """
-    # convert tilt angle to radians
-    theta = np.radians(angle)
 
-    # x2 = Dx
-    # y2 = Dy + Dz * np.cos(theta)
-    # z2 = Dz * np.sin(theta)
+    theta = np.radians(angle)
 
     # get direct distance between the centers
     d = np.sqrt(Dx**2 + Dy**2 + Dz**2)
@@ -75,6 +71,8 @@ def radiative_heat_gain(A_device, A_hand, T_device, T_hand, d_x, d_y, d_z, theta
 
     # Radiative heat gain rate (W)
     Q_rad = epsilon * sigma * F * A_device * (T_device_k**4 - T_hand_k**4)
+    Q_radinf = epsilon * sigma * (1 - F) * A_device * (T_device_k**4 - 293**4)
+    print(Q_radinf)
     return Q_rad
 
 
@@ -111,14 +109,14 @@ def plot_geometry_plotly(Dx, Dy, Dz, angle_deg, A1, A2, view_factor):
     - A1: Area of the first surface (m²)
     - A2: Area of the second surface (m²)
     """
-    # Convert angle to radians
+
     angle_rad = np.radians(angle_deg)
 
-    # Compute the dimensions of the rectangles assuming they are squares
+    # dimensions of the rectangles assuming they are squares
     L1 = np.sqrt(A1)
     L2 = np.sqrt(A2)
 
-    # Define the center of the hand rectangle (at the origin)
+    # center of the hand rectangle (at the origin)
     hand_center = np.array([0, 0, 0])
     hand_corners = np.array(
         [
@@ -129,7 +127,7 @@ def plot_geometry_plotly(Dx, Dy, Dz, angle_deg, A1, A2, view_factor):
         ]
     )
 
-    # Define the center of the handwarmer rectangle
+    # center of the handwarmer rectangle
     handwarmer_center = np.array([Dx, Dy, Dz])
     handwarmer_corners = (
         np.array(
@@ -143,10 +141,9 @@ def plot_geometry_plotly(Dx, Dy, Dz, angle_deg, A1, A2, view_factor):
         + handwarmer_center
     )
 
-    # Create 3D plot using Plotly
     fig = go.Figure()
 
-    # Add hand rectangle
+    # hand rectangle
     fig.add_trace(
         go.Mesh3d(
             x=hand_corners[:, 0],
@@ -160,7 +157,7 @@ def plot_geometry_plotly(Dx, Dy, Dz, angle_deg, A1, A2, view_factor):
         )
     )
 
-    # Add handwarmer rectangle
+    # handwarmer rectangle
     fig.add_trace(
         go.Mesh3d(
             x=handwarmer_corners[:, 0],
@@ -174,7 +171,7 @@ def plot_geometry_plotly(Dx, Dy, Dz, angle_deg, A1, A2, view_factor):
         )
     )
 
-    # Add line connecting centers
+    # line connecting centers
     fig.add_trace(
         go.Scatter3d(
             x=[hand_center[0], handwarmer_center[0]],
@@ -186,12 +183,14 @@ def plot_geometry_plotly(Dx, Dy, Dz, angle_deg, A1, A2, view_factor):
         )
     )
 
-    # Add axis labels
     fig.update_layout(
         scene=dict(
             xaxis_title="X (m)",
+            xaxis=dict(range=[-0.2, 0.2]),
             yaxis_title="Y (m)",
+            yaxis=dict(range=[-0.2, 0.2]),
             zaxis_title="Z (m)",
+            zaxis=dict(range=[0, 0.2]),
             aspectmode="cube",
         ),
         title=f"Resulting View Factor (F12): {view_factor:.2f}",
